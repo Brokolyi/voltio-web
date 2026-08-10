@@ -753,7 +753,7 @@ function setBanner(mode, text){
 
 async function loadLiveData(){
   try{
-    const res = await fetch('https://api.openchargemap.io/v3/poi/?output=json&countrycode=CO&maxresults=3000&compact=false&verbose=false');
+    const res = await fetch('https://api.openchargemap.io/v3/poi/?output=json&countrycode=CO&maxresults=3000&compact=false&verbose=false&key=2aa807ab-4861-4217-a65c-a132176827ff');
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const mapped = data
