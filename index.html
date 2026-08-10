@@ -488,6 +488,7 @@
      fuera de la app nativa; ver initAdBanner() más abajo. -->
 <script src="vendor/capacitor.js"></script>
 <script src="vendor/admob-plugin.js"></script>
+<script src="vendor/geolocation-plugin.js"></script>
 
 <script>
 const fallbackStations = [
@@ -768,10 +769,17 @@ async function loadLiveData(){
   }
 }
 
+// Estaciones donde ningún conector reportado tiene un tipo confirmado se
+// ocultan del listado hasta que alguien complete ese dato (ver fallbackStations).
+function hasKnownConnector(s){
+  return s.plugs.some(p=>!normalize(p.t).includes("no especificado"));
+}
+
 function getFilteredStations(){
   const q = normalize(query);
 
   let filtered = stations.filter(s=>{
+    if(!hasKnownConnector(s)) return false;
     const cityMatch = activeCity==="Todas" || s.city===activeCity;
     const plugMatch = activePlug==="Todos" || s.plugs.some(p=>p.t===activePlug);
     const connectorMatch = !pickerConnector || s.plugs.some(p=>connectorCategory(p.t)===pickerConnector);
@@ -1066,8 +1074,47 @@ document.getElementById('favBtn').addEventListener('click', function(){
 
 const NEAR_ME_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg> Cerca de mí';
 
-function enableNearMe(onDone){
+function onLocationSuccess(pos, btn, onDone){
+  userLoc = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+  nearMe = true;
+  visibleCount = PAGE_SIZE;
+  btn.classList.remove('loading');
+  btn.innerHTML = NEAR_ME_ICON;
+  btn.classList.add('active');
+  render();
+  if(onDone) onDone(true);
+}
+
+function onLocationError(btn, onDone){
+  btn.classList.remove('loading');
+  btn.innerHTML = NEAR_ME_ICON;
+  if(onDone) onDone(false);
+}
+
+async function enableNearMe(onDone){
   const btn = document.getElementById('nearMeBtn');
+  const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+  // Dentro de la app nativa, navigator.geolocation no dispara el diálogo de
+  // permiso de Android de forma confiable -- hay que pedirlo con el plugin.
+  if(isNative && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation){
+    btn.classList.add('loading');
+    btn.textContent = 'Ubicando…';
+    try{
+      const { Geolocation } = window.Capacitor.Plugins;
+      const perms = await Geolocation.requestPermissions();
+      if(perms.location !== 'granted' && perms.coarseLocation !== 'granted'){
+        onLocationError(btn, onDone);
+        return;
+      }
+      const pos = await Geolocation.getCurrentPosition();
+      onLocationSuccess(pos, btn, onDone);
+    }catch(e){
+      onLocationError(btn, onDone);
+    }
+    return;
+  }
+
   if(!('geolocation' in navigator)){
     if(onDone) onDone(false);
     return;
@@ -1075,21 +1122,8 @@ function enableNearMe(onDone){
   btn.classList.add('loading');
   btn.textContent = 'Ubicando…';
   navigator.geolocation.getCurrentPosition(
-    pos=>{
-      userLoc = {lat: pos.coords.latitude, lng: pos.coords.longitude};
-      nearMe = true;
-      visibleCount = PAGE_SIZE;
-      btn.classList.remove('loading');
-      btn.innerHTML = NEAR_ME_ICON;
-      btn.classList.add('active');
-      render();
-      if(onDone) onDone(true);
-    },
-    err=>{
-      btn.classList.remove('loading');
-      btn.innerHTML = NEAR_ME_ICON;
-      if(onDone) onDone(false);
-    }
+    pos=>onLocationSuccess(pos, btn, onDone),
+    ()=>onLocationError(btn, onDone)
   );
 }
 
