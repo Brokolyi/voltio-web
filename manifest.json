@@ -1,0 +1,17 @@
+{
+  "name": "Voltio — Carga eléctrica en Colombia",
+  "short_name": "Voltio",
+  "description": "Encuentra estaciones de carga para tu vehículo eléctrico en ciudades, pueblos y carreteras de Colombia.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#2F5BFF",
+  "lang": "es-CO",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

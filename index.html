@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voltio — Carga eléctrica en Colombia</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2F5BFF">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Voltio">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+<style>
+  :root{
+    --bg:#FFFFFF;
+    --surface:#F6F7F9;
+    --line:#E7E9EE;
+    --text:#0B0D12;
+    --muted:#6B7280;
+    --accent:#2F5BFF;
+    --accent-soft:#EAEFFF;
+    --teal:#00B8A9;
+    --ok:#16A34A;
+    --warn:#D97706;
+    --down:#DC2626;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 0 60px;}
+  body.has-ad-banner{padding-bottom:64px;}
+
+  header{
+    padding:36px 22px 22px;
+    background:var(--bg);
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    color:var(--accent);
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:44px;
+    font-weight:700;
+    margin:0 0 6px;
+    letter-spacing:-0.02em;
+    line-height:1;
+  }
+  header p.sub{margin:0;color:var(--muted);font-size:15px;line-height:1.5;max-width:46ch;}
+
+  .controls{padding:20px 22px 0;}
+  .search-wrap{position:relative;}
+  .city-suggestions{
+    position:absolute;left:0;right:0;top:calc(100% - 4px);
+    background:#fff;border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.1);
+    z-index:20;overflow:hidden;display:none;
+  }
+  .city-suggestions.show{display:block;}
+  .city-suggestion{
+    padding:12px 16px;font-family:'Inter',sans-serif;font-size:14px;
+    color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px;
+    border-bottom:1px solid var(--line);
+  }
+  .city-suggestion:last-child{border-bottom:none;}
+  .city-suggestion:active{background:var(--surface);}
+  .city-suggestion svg{flex-shrink:0;color:var(--muted);}
+  .search{
+    display:flex;align-items:center;gap:10px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:12px;
+  }
+  .search input{
+    background:none;border:none;outline:none;
+    color:var(--text);font-size:16px;width:100%;
+    font-family:'Inter',sans-serif;
+  }
+  .search input::placeholder{color:var(--muted);}
+  .search svg{flex-shrink:0;color:var(--muted);}
+  .search .clear-btn{
+    flex-shrink:0;display:none;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;border:none;
+    background:var(--line);color:var(--muted);cursor:pointer;padding:0;
+  }
+  .search .clear-btn.show{display:flex;}
+  .search .clear-btn:active{background:var(--muted);color:#fff;}
+
+  .chip-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;-ms-overflow-style:none;scrollbar-width:none;}
+  .chip-row::-webkit-scrollbar{display:none;}
+  .chip{
+    flex-shrink:0;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    padding:9px 15px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--muted);
+    cursor:pointer;
+    white-space:nowrap;
+    transition:all .15s ease;
+  }
+  .chip.active{
+    background:var(--text);
+    border-color:var(--text);
+    color:#fff;
+    font-weight:500;
+  }
+
+  .quick-row{display:flex;gap:8px;margin-top:8px;}
+  .quick-btn{
+    flex:1;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;font-weight:600;
+    padding:11px 10px;
+    border-radius:14px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--text);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .quick-btn svg{flex-shrink:0;}
+  .quick-btn.active{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+  .quick-btn.loading{opacity:0.6;pointer-events:none;}
+
+  .data-banner{
+    margin:16px 22px 0;
+    padding:10px 14px;
+    border-radius:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    display:flex;align-items:center;gap:8px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    color:var(--muted);
+  }
+  .data-banner .dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+  .data-banner.live{background:#ECFDF3;border-color:#BBF0D2;color:#16794A;}
+  .data-banner.live .dot{background:#16A34A;}
+  .data-banner.offline{background:#FEF3E2;border-color:#FCE0B0;color:#92500A;}
+  .data-banner.offline .dot{background:var(--warn);}
+
+  .count-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:22px 22px 12px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .count-row b{color:var(--text);font-size:14px;}
+
+  .list{padding:0 22px;display:flex;flex-direction:column;gap:14px;}
+
+  .card{
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:20px 20px 16px;
+    transition:border-color .15s ease;
+  }
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px;}
+  .card-name{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:600;line-height:1.25;letter-spacing:-0.01em;}
+  .card-city{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;letter-spacing:0.07em;text-transform:uppercase;
+    color:var(--accent);white-space:nowrap;margin-top:5px;
+  }
+  .card-addr{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;}
+
+  .hero-level{
+    display:inline-flex;align-items:baseline;gap:8px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:22px;
+    margin-bottom:12px;
+    letter-spacing:-0.01em;
+  }
+  .hero-level .lvl-tag{font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:500;letter-spacing:0.04em;padding:4px 10px;border-radius:8px;text-transform:uppercase;}
+  .lvl-slow{color:var(--muted);}
+  .lvl-slow .lvl-tag{background:var(--surface);color:var(--muted);}
+  .lvl-fast{color:var(--warn);}
+  .lvl-fast .lvl-tag{background:#FEF3E2;color:var(--warn);}
+  .lvl-ultra{color:var(--accent);}
+  .lvl-ultra .lvl-tag{background:var(--accent-soft);color:var(--accent);}
+
+  .status-line{
+    display:flex;align-items:flex-start;gap:7px;
+    font-size:12.5px;
+    color:var(--muted);
+    line-height:1.5;
+    margin-bottom:14px;
+  }
+  .status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+  .status-ok .status-dot{background:var(--ok);}
+  .status-warn .status-dot{background:var(--warn);}
+  .status-down .status-dot{background:var(--down);}
+
+  .plugs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .plug{
+    display:flex;flex-direction:column;gap:2px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    padding:8px 12px;
+    border-radius:10px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    color:var(--text);
+  }
+  .plug-brands{font-size:9.5px;color:var(--muted);letter-spacing:0.01em;font-family:'Inter',sans-serif;}
+
+  .card{position:relative;}
+  .fav-btn{
+    position:absolute;top:16px;right:16px;
+    width:32px;height:32px;border-radius:50%;
+    border:1px solid var(--line);background:#fff;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--line);
+    transition:all .15s ease;
+  }
+  .fav-btn.active{color:var(--warn);border-color:#FCE0B0;background:#FEF3E2;}
+  .fav-btn svg{width:16px;height:16px;}
+  .card-top{padding-right:38px;}
+
+  .view-toggle{display:flex;gap:8px;margin-top:8px;}
+  .view-btn{
+    flex:1;
+    font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+    padding:10px;border-radius:12px;
+    border:1px solid var(--line);background:#fff;color:var(--muted);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .view-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
+
+  #mapContainer{display:none;position:relative;}
+  #map{width:100%;height:calc(100vh - 300px);min-height:360px;}
+  .map-cap-note{
+    position:absolute;bottom:12px;left:12px;right:12px;z-index:1000;
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:8px 12px;font-size:12px;color:var(--muted);text-align:center;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
+  }
+  .leaflet-popup-content{font-family:'Inter',sans-serif;min-width:200px;}
+  .popup-name{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;margin-bottom:2px;}
+  .popup-city{color:var(--muted);font-size:12px;margin-bottom:6px;}
+  .popup-status{font-size:12.5px;margin-bottom:6px;}
+  .popup-status.status-ok{color:var(--ok);}
+  .popup-status.status-warn{color:var(--warn);}
+  .popup-status.status-down{color:var(--down);}
+  .popup-plugs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+  .popup-plug{font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 7px;}
+  .popup-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .popup-fav{border:1px solid var(--line);border-radius:8px;background:#fff;padding:5px 9px;font-size:12px;cursor:pointer;}
+  .popup-fav.active{color:var(--warn);border-color:#FCE0B0;background:#FEF3E2;}
+  .popup-maplink{font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none;}
+
+  .card-foot{display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid var(--line);}
+  .rating{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);}
+  .rating b{color:var(--text);}
+  .maplink{
+    font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+    color:var(--accent);text-decoration:none;
+    display:flex;align-items:center;gap:4px;
+  }
+
+  .distance-badge{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;
+    color:var(--accent);margin-top:2px;
+  }
+
+  .load-more{
+    display:block;width:calc(100% - 44px);margin:6px 22px 0;
+    padding:14px;border-radius:14px;
+    border:1px solid var(--line);background:var(--surface);
+    color:var(--text);font-family:'Inter',sans-serif;font-size:14px;font-weight:600;
+    cursor:pointer;
+  }
+  .load-more:active{background:var(--line);}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;}
+  .empty .reset-link{
+    display:inline-block;margin-top:14px;
+    font-weight:600;color:var(--accent);cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:13.5px;
+  }
+
+  .legend{
+    margin:32px 22px 0;
+    padding:22px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    background:var(--surface);
+  }
+  .legend h3{
+    font-family:'Space Grotesk',sans-serif;font-size:17px;margin:0 0 14px;font-weight:600;
+  }
+  .legend-item{display:flex;gap:10px;font-size:12.5px;color:var(--muted);margin-bottom:11px;line-height:1.55;}
+  .legend-item:last-child{margin-bottom:0;}
+  .legend-item b{color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;min-width:84px;display:inline-block;}
+
+  .connector-bar{display:flex;gap:8px;margin-top:8px;}
+  .connector-cta{
+    flex:1;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:'Inter',sans-serif;font-size:13.5px;font-weight:600;
+    padding:13px 14px;border-radius:14px;
+    border:1px solid var(--accent);
+    background:var(--accent-soft);
+    color:var(--accent);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .connector-cta svg{flex-shrink:0;}
+  .connector-cta.picked{background:var(--text);border-color:var(--text);color:#fff;}
+  .connector-clear-btn{
+    display:none;flex-shrink:0;align-items:center;justify-content:center;
+    width:44px;border-radius:14px;border:1px solid var(--line);
+    background:#fff;color:var(--muted);cursor:pointer;padding:0;
+  }
+  .connector-clear-btn.show{display:flex;}
+
+  .connector-modal-overlay{
+    display:none;position:fixed;inset:0;z-index:100;
+    background:rgba(11,13,18,0.55);
+    padding:16px;align-items:flex-end;justify-content:center;
+  }
+  .connector-modal-overlay.open{display:flex;}
+  .connector-modal{
+    background:#fff;border-radius:22px 22px 12px 12px;
+    max-width:640px;width:100%;max-height:88vh;overflow-y:auto;
+    padding:24px 20px 28px;
+  }
+  .connector-modal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
+  .connector-modal-header h2{font-family:'Space Grotesk',sans-serif;font-size:22px;margin:0;letter-spacing:-0.01em;}
+  .modal-close{
+    flex-shrink:0;width:32px;height:32px;border-radius:50%;
+    border:1px solid var(--line);background:#fff;color:var(--muted);
+    font-size:18px;line-height:1;cursor:pointer;padding:0;
+  }
+  .connector-modal-sub{color:var(--muted);font-size:13.5px;line-height:1.5;margin:0 0 20px;}
+  .connector-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .connector-card{
+    border:1px solid var(--line);border-radius:16px;padding:16px 14px;
+    background:var(--surface);cursor:pointer;text-align:left;
+    display:flex;flex-direction:column;gap:8px;
+    font-family:'Inter',sans-serif;
+  }
+  .connector-card:active{background:var(--accent-soft);border-color:var(--accent);}
+  .connector-card svg{color:var(--text);}
+  .connector-card .cc-label{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;}
+  .connector-card .cc-sub{font-size:11px;color:var(--accent);font-family:'IBM Plex Mono',monospace;letter-spacing:0.02em;}
+  .connector-card .cc-brands{font-size:11px;color:var(--muted);line-height:1.4;}
+  .connector-card.cc-any{grid-column:1 / -1;flex-direction:row;align-items:center;justify-content:center;gap:10px;background:#fff;}
+
+  .note{
+    margin:18px 22px 0;
+    font-size:11.5px;
+    color:var(--muted);
+    line-height:1.6;
+    padding:0 2px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span> Colombia · datos verificados en campo</div>
+    <h1>Voltio</h1>
+    <p class="sub">Estaciones de carga para vehículos eléctricos en ciudades, pueblos y carreteras de Colombia, con el tipo de conector y las marcas compatibles.</p>
+  </header>
+
+  <div class="controls">
+    <div class="search-wrap">
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="searchInput" type="text" placeholder="Busca por nombre, ciudad, dirección o conector..." aria-label="Buscar estaciones">
+        <button class="clear-btn" id="clearBtn" aria-label="Limpiar búsqueda" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="city-suggestions" id="citySuggestions"></div>
+    </div>
+    <div class="chip-row" id="cityRow"></div>
+    <div class="chip-row" id="plugRow" style="margin-top:8px;"></div>
+    <div class="quick-row">
+      <button class="quick-btn" id="nearMeBtn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        Cerca de mí
+      </button>
+      <button class="quick-btn" id="favBtn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Favoritos
+      </button>
+    </div>
+    <div class="connector-bar">
+      <button class="connector-cta" id="connectorCtaBtn" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v4M17 2v4M7 15a5 5 0 0 0 10 0v-5H7v5Z"/><path d="M9 22v-3M15 22v-3"/></svg>
+        <span id="connectorCtaLabel">¿Cuál es tu conector? Identifícalo</span>
+      </button>
+      <button class="connector-clear-btn" id="connectorClearBtn" type="button" aria-label="Quitar filtro de conector">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="viewListBtn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Lista
+      </button>
+      <button class="view-btn" id="viewMapBtn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        Mapa
+      </button>
+    </div>
+  </div>
+
+  <div class="data-banner" id="dataBanner">Conectando con Open Charge Map…</div>
+
+  <div class="count-row">
+    <span><b id="resultCount">0</b> estaciones</span>
+    <span id="cityLabel">Todo el país</span>
+  </div>
+
+  <div class="list" id="list"></div>
+  <button class="load-more" id="loadMoreBtn" style="display:none;" type="button">Ver más estaciones</button>
+  <div class="empty" id="emptyState" style="display:none;">
+    No hay estaciones que coincidan con ese filtro. Prueba con otra ciudad o conector.
+    <br><span class="reset-link" id="resetLink">Limpiar todos los filtros</span>
+  </div>
+
+  <div id="mapContainer">
+    <div id="map"></div>
+  </div>
+
+  <div class="legend">
+    <h3>Tipos de conector</h3>
+    <div class="legend-item"><b>Tipo 1 / J1772</b> AC lento, de 3 a 7 kW. El más común en cargadores domésticos y de centros comerciales. Marcas: Mitsubishi, Renault (Twizy), Kia y Nissan de modelos antiguos.</div>
+    <div class="legend-item"><b>Tipo 2 / Mennekes</b> AC lento a medio, de 6 a 22 kW. Estándar en la mayoría de puntos públicos del país. Marcas: BMW, Mercedes-Benz, Audi, Volvo, Renault, Chevrolet, BYD, Kia, Hyundai.</div>
+    <div class="legend-item"><b>CCS1 / CCS2</b> DC rápido, de 30 a 60+ kW. Carga en menos de una hora en autos compatibles. Marcas: Chevrolet Bolt (CCS1); BYD, Kia, Hyundai, BMW, Mercedes-Benz, Audi, Volvo, Renault (CCS2). Tesla también carga aquí con adaptador CCS2.</div>
+    <div class="legend-item"><b>CHAdeMO</b> DC rápido, usado por algunos modelos asiáticos. Marcas: Nissan Leaf, Kia Soul EV y Mitsubishi de generaciones anteriores.</div>
+    <div class="legend-item"><b>GB/T</b> DC ultra rápido, de 40 a 80+ kW. Estándar chino, común en estaciones Enel X. Marcas: BYD, JAC y otros modelos chinos vendidos en Colombia.</div>
+    <div class="legend-item"><b>Tesla (NACS)</b> Conector propio de Tesla. En Colombia, los Tesla suelen cargar en puntos públicos mediante un adaptador a Tipo 2 o CCS2, ya que aún no hay red propia Supercharger en el país.</div>
+  </div>
+
+  <p class="note">Cuando hay conexión, esta app muestra datos en vivo de <a href="https://openchargemap.org" target="_blank" rel="noopener" style="color:var(--accent);">Open Charge Map</a>, una base de datos abierta y colaborativa (licencia ODbL) que se actualiza constantemente. Sin conexión, se muestra un respaldo local recopilado de reportes públicos (agosto 2026). La disponibilidad real de cada conector puede cambiar — confirma en el sitio o en la app del operador antes de ir.</p>
+
+  <div class="connector-modal-overlay" id="connectorModalOverlay">
+    <div class="connector-modal">
+      <div class="connector-modal-header">
+        <h2>¿Cuál es tu conector?</h2>
+        <button class="modal-close" id="connectorModalClose" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <p class="connector-modal-sub">Toca la imagen que más se parezca a la entrada de carga de tu carro. Filtramos las estaciones compatibles y las ordenamos por cercanía.</p>
+      <div class="connector-grid" id="connectorGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Puente de Capacitor + plugin de AdMob (self-hosted, sin CDN). Sin efecto
+     fuera de la app nativa; ver initAdBanner() más abajo. -->
+<script src="vendor/capacitor.js"></script>
+<script src="vendor/admob-plugin.js"></script>
+
+<script>
+const fallbackStations = [
+  {name:"Enel X — Cra. 75 #23F-27", city:"Bogotá", addr:"Cra. 75 #23F-27, Bogotá", lat:4.6654029, lng:-74.1202633, rating:4.1, plugs:[{t:"GB/T",lvl:"ultra"},{t:"Tipo 2",lvl:"slow"}], status:"warn", note:"Reportes recientes de errores al iniciar carga en algunos puntos."},
+  {name:"Chevrolet Charging Station", city:"Bogotá", addr:"Cra. 30 #8 Sur - 17, Bogotá", lat:4.5987094, lng:-74.1077922, rating:4.5, plugs:[{t:"Tipo 1",lvl:"slow"},{t:"Tipo 2",lvl:"slow"},{t:"GB/T",lvl:"ultra"}], status:"ok", note:"Suele estar concurrido en horas pico."},
+  {name:"EV Station — Cl. 8 Sur", city:"Bogotá", addr:"Cl. 8 Sur #71a-69, Bogotá", lat:4.6179162, lng:-74.1359816, rating:2.7, plugs:[{t:"Tipo 1",lvl:"slow"},{t:"Tipo 2",lvl:"slow"}], status:"warn", note:"Mínimo garantizado de 6 kW en Tipo 2; parte de los puertos reportan fallas."},
+  {name:"EV Station — Carulla Cra. 10a", city:"Bogotá", addr:"Cra. 10a #70-51, Bogotá", lat:4.6551771, lng:-74.0595019, rating:3.3, plugs:[{t:"Tipo 1 (J1772)",lvl:"slow"},{t:"Tipo 2",lvl:"slow"}], status:"warn", note:"Se paga por la app MUBON. Algunos usuarios de Renault reportan incompatibilidad con Tipo 2."},
+  {name:"EV Station — Autonorte Usaquén", city:"Bogotá", addr:"Auto. Norte #127D-60, Usaquén, Bogotá", lat:4.713361, lng:-74.0519312, rating:4.0, plugs:[{t:"GB/T",lvl:"ultra"}], status:"ok", note:"Carga superrápida GB/T."},
+  {name:"EV Station — Cl. 14", city:"Bogotá", addr:"Cl. 14 #37-23, Bogotá", lat:4.6199503, lng:-74.0972334, rating:5.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reportes de conector específico."},
+  {name:"EV Station — Éxito Norte", city:"Bogotá", addr:"Éxito Nte. #170, Bogotá", lat:4.7549819, lng:-74.0448941, rating:3.0, plugs:[{t:"Tipo 1",lvl:"slow"},{t:"Tipo 2",lvl:"slow"}], status:"warn", note:"Carga lenta, alrededor de 6 kW."},
+  {name:"Enel X — Teusaquillo", city:"Bogotá", addr:"Cl. 58a Bis #37-22, Teusaquillo, Bogotá", lat:4.6496574, lng:-74.0815143, rating:4.1, plugs:[{t:"GB/T",lvl:"ultra"},{t:"Tipo 2",lvl:"slow"}], status:"warn", note:"Punto de carga superrápida GB/T; el conector Tipo 2 lleva tiempo reportado fuera de servicio."},
+  {name:"Dielco Charging Station", city:"Bogotá", addr:"Ac 145 #91-19, Suba, Bogotá", lat:4.7367307, lng:-74.0857725, rating:5.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Buenas reseñas; por ahora solo se cobra el parqueadero."},
+  {name:"EPM Charging Station", city:"Medellín", addr:"Cl. 39c #73-07, Laureles, Medellín", lat:6.2457301, lng:-75.5930548, rating:3.8, plugs:[{t:"Tipo 2",lvl:"slow"}], status:"down", note:"Reportada inactiva desde mediados de 2025."},
+  {name:"EV Station — La Candelaria", city:"Medellín", addr:"Cra. 50 #32-16, La Candelaria, Medellín", lat:6.2337916, lng:-75.5740431, rating:4.3, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Suele haber demanda alta."},
+  {name:"Celsia Charging Station", city:"Medellín", addr:"Cl 10 #50-347, Guayabal, Medellín", lat:6.2144613, lng:-75.5815112, rating:2.1, plugs:[{t:"No especificado",lvl:"slow"}], status:"down", note:"Varios reportes indican que Celsia cerró estos puntos de carga."},
+  {name:"EV Station — El Poblado (Cra. 43A)", city:"Medellín", addr:"Cra. 43A #1-50, El Poblado, Medellín", lat:6.2042559, lng:-75.5710625, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas recientes."},
+  {name:"EV Station — El Poblado (Cl. 10A)", city:"Medellín", addr:"Cl 10A #22-04, El Poblado, Medellín", lat:6.2082027, lng:-75.552556, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Abierto las 24 horas."},
+  {name:"EV Station — Las Vegas", city:"Cali", addr:"Cra. 100 #169-5, Las Vegas, Cali", lat:3.373375, lng:-76.5385952, rating:2.8, plugs:[{t:"Tipo 2",lvl:"fast"}], status:"down", note:"Cargador rápido reportado fuera de servicio por semanas."},
+  {name:"Emcali — Unicentro", city:"Cali", addr:"Parqueadero Unicentro, Las Vegas, Cali", lat:3.3732248, lng:-76.5399798, rating:3.1, plugs:[{t:"CCS1 (Combo 1)",lvl:"fast"},{t:"CHAdeMO",lvl:"fast"}], status:"warn", note:"Acceso gratuito con tarjeta contactless (MIO, bancaria); disponibilidad variable."},
+  {name:"EV Station — Av. 3 Nte.", city:"Cali", addr:"Av. 3 Nte. #52n-46, El Rincón, Cali", lat:3.486665, lng:-76.5166882, rating:4.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"EnergiCar", city:"Cali", addr:"Av. 5a Nte. #23DN-31, San Vicente, Cali", lat:3.465948, lng:-76.5276212, rating:4.1, plugs:[{t:"Tipo 1",lvl:"slow"},{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Vía app EnergiCar (Emcali). Tipo 1 entrega hasta 7 kW."},
+  {name:"MUBON Charging Station", city:"Cali", addr:"Calle 34a Norte #2b Norte, Prados Norte, Cali", lat:3.4704921, lng:-76.519399, rating:4.0, plugs:[{t:"CCS1",lvl:"fast"},{t:"CCS2",lvl:"fast"},{t:"Tipo 1",lvl:"slow"},{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"CCS2 entrega 30–40 kW según usuarios simultáneos. Se paga con la app MUBON."},
+  {name:"EV Station — Centro Histórico", city:"Barranquilla", addr:"Cra. 53 #82-11, Centro Histórico, Barranquilla", lat:11.0063567, lng:-74.8140205, rating:4.3, plugs:[{t:"CCS1",lvl:"fast"},{t:"GB/T",lvl:"ultra"}], status:"ok", note:"Carga reportada a 60 kW en ambos conectores."},
+  {name:"EV Station — Cl. 110", city:"Barranquilla", addr:"Cl. 110 #43-508, Centro Histórico, Barranquilla", lat:11.006401, lng:-74.8414537, rating:5.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"EV Station — Riomar", city:"Barranquilla", addr:"Riomar, Barranquilla", lat:11.0102183, lng:-74.8202832, rating:2.5, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"Centro Comercial Cacique", city:"Bucaramanga", addr:"Tv. 93, Sotomayor, Bucaramanga", lat:7.0992172, lng:-73.1075687, rating:3.7, plugs:[{t:"No especificado",lvl:"slow"}], status:"warn", note:"Solo un cargador de carga media funciona; los demás son lentos o están fuera de servicio."},
+  {name:"AC/DC ESSA", city:"Bucaramanga", addr:"Cra. 21, Cl. 45, Bolívar, Bucaramanga", lat:7.1167168, lng:-73.1201958, rating:3.6, plugs:[{t:"CCS1",lvl:"fast"}], status:"down", note:"Reportado fuera de servicio de forma intermitente; CCS1 requiere adaptador según reseñas."},
+  {name:"BMW Destination Charging", city:"Bucaramanga", addr:"Cra. 38 #49-12, Cabecera del Llano, Bucaramanga", lat:7.1155085, lng:-73.1078238, rating:5.0, plugs:[{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Cargador de destino, abierto 24 horas."},
+  {name:"Chevrolet Charging Station", city:"Bucaramanga", addr:"Cl. 54 #23-87, Nuevo Sotomayor, Bucaramanga", lat:7.1112554, lng:-73.1149931, rating:null, plugs:[{t:"Tipo 1",lvl:"slow"},{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Horario comercial, cerrado domingos."},
+
+  // Pueblos y carreteras
+  {name:"EV Station — San Cayetano", city:"Melgar", addr:"San Cayetano, Melgar, Tolima", lat:4.2530337, lng:-74.6097606, rating:3.0, plugs:[{t:"GB/T",lvl:"ultra"}], status:"warn", note:"Solo un punto con tres cargadores; dos reportan fallas de contacto en el cable. La zona tiene mala señal de internet, lo que complica el pago."},
+  {name:"BMW Destination — Vía Girardot-Melgar", city:"Girardot", addr:"Vía Girardot - Melgar, Km 5, Ricaurte, Cundinamarca", lat:4.2680409, lng:-74.7605145, rating:2.0, plugs:[{t:"Tipo 2",lvl:"slow"}], status:"warn", note:"Acceso restringido: reseñas indican que es solo para socios o huéspedes del club Peñalisa, no de acceso público."},
+  {name:"One Electrolineras — Berlín", city:"Ibagué", addr:"Manzana M, Zona Deportiva Berlín, Ibagué, Tolima", lat:4.4188221, lng:-75.182317, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas. Horario 7:00 a.m. – 11:00 p.m."},
+  {name:"EV Station — Mirolindo", city:"Ibagué", addr:"Km 4, Mirolindo, Ibagué, Tolima", lat:4.4236932, lng:-75.187384, rating:1.5, plugs:[{t:"No especificado",lvl:"slow"}], status:"warn", note:"Reseñas indican que es exclusivo para vehículos Chevrolet."},
+  {name:"EV Station — Cra. 18", city:"Armenia", addr:"Cra. 18 #50-5, Armenia, Quindío", lat:4.5188437, lng:-75.6893176, rating:4.4, plugs:[{t:"CCS1",lvl:"fast"},{t:"CCS2",lvl:"fast"},{t:"GB/T",lvl:"ultra"}], status:"warn", note:"Bien ubicada para cruzar la cordillera Central; reseñas mixtas — funciona bien casi siempre pero hay reportes puntuales de fallas."},
+  {name:"El Carro Colombiano Charging Station", city:"Armenia", addr:"Cra. 14 #256, Armenia, Quindío", lat:4.5405425, lng:-75.6654108, rating:5.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"EV Station — Vía Armenia-Pereira (Filandia)", city:"Filandia", addr:"Vía Armenia - Pereira, Filandia, Quindío", lat:4.6884844, lng:-75.6070474, rating:4.2, plugs:[{t:"CCS1",lvl:"fast"},{t:"CCS2",lvl:"slow"}], status:"ok", note:"CCS1 es carga rápida; CCS2 aquí entrega solo 7 kW. Requiere activación con el vigilante y la app Moveq."},
+  {name:"La Forchetta Electrolinera", city:"Fusagasugá", addr:"Vía Panamericana Km 56, Fusagasugá, Cundinamarca", lat:4.3372515, lng:-74.3766583, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sobre la vía Panamericana Bogotá–Girardot. Sin reseñas detalladas."},
+  {name:"EV Station — Barrio Nuevo", city:"Villavicencio", addr:"Av. 40, Puente El Maizaro #26C-10, Villavicencio, Meta", lat:4.1422287, lng:-73.6343297, rating:5.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"El Triángulo Energy Hacaritama", city:"Villavicencio", addr:"Cr. 14C Bis, Villavicencio, Meta", lat:4.128489, lng:-73.6135402, rating:5.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"EV Station — Cogua (Voltex/Altoque)", city:"Cogua", addr:"Cogua, Cundinamarca", lat:5.0691674, lng:-73.9437155, rating:3.6, plugs:[{t:"GB/T",lvl:"ultra"}], status:"warn", note:"Carga reportada a 45 kW; más rápida pero más cara que otros puntos de la zona. Algunos usuarios reportan fallas de conexión con la app."},
+  {name:"BMW Destination — Zipaquirá-Tocancipá", city:"Tocancipá", addr:"Vía Zipaquirá - Tocancipá, Cundinamarca", lat:4.9612585, lng:-73.9474734, rating:5.0, plugs:[{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"Reca", city:"Tocancipá", addr:"Puerta del Sol, Tocancipá, Cundinamarca", lat:4.97028, lng:-73.9663999, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"BMW Destination — Cajicá-Chía", city:"Chía", addr:"Vía Cajicá - Chía, Km 2.5, Chía, Cundinamarca", lat:4.8859123, lng:-74.0347704, rating:5.0, plugs:[{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"Terpel Voltex — Chía", city:"Chía", addr:"Chía, Cundinamarca", lat:4.845469, lng:-74.0298955, rating:3.2, plugs:[{t:"CCS1",lvl:"fast"},{t:"GB/T",lvl:"ultra"}], status:"warn", note:"Reportes de carga muy por debajo de lo anunciado (hasta 10 kW cuando la app promete 50 kW) y fallas frecuentes de la app Voltex."},
+  {name:"EV Station — Vía a Barichara", city:"Barichara", addr:"Km 11 vía San Gil, Vereda El Guayabal, Barichara, Santander", lat:6.6128493, lng:-73.1525942, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Cerca de San Gil. Sin reseñas detalladas."},
+  {name:"EV Station — Av. Circunvalar", city:"Pereira", addr:"Av. Circunvalar Cra. 14 #5-20, Pereira, Risaralda", lat:4.8109622, lng:-75.693244, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"EV Station — Cl. 15", city:"Pereira", addr:"Cl. 15 #13-39, Pereira, Risaralda", lat:4.808033, lng:-75.6916784, rating:4.5, plugs:[{t:"No especificado",lvl:"fast"}], status:"ok", note:"Carga rápida, un punto por tipo de cargador. Incluye 4 horas de parqueo gratis mientras cargas."},
+  {name:"efacec Charging Station", city:"Pereira", addr:"Av. La Independencia #66D-345, Pereira, Risaralda", lat:4.8036378, lng:-75.7368528, rating:4.7, plugs:[{t:"GB/T",lvl:"ultra"},{t:"CCS1",lvl:"fast"},{t:"CCS2",lvl:"fast"}], status:"ok", note:"También tiene puntos para motos y bicicletas eléctricas (CHAdeMO, CCS, AC). Abierta 24 horas."},
+  {name:"EV Station — Cerritos del Mar", city:"Pereira", addr:"Cerritos, Pereira, Risaralda", lat:4.8068943, lng:-75.8177464, rating:3.5, plugs:[{t:"No especificado",lvl:"slow"}], status:"warn", note:"Carga reportada como lenta (cerca de 10 kW) comparada con otros puntos del país."},
+  {name:"Estación de Carga — Av. Kevin Ángel", city:"Manizales", addr:"Av. Kevin Ángel, Calle 63-77, Manizales, Caldas", lat:5.0595047, lng:-75.4835861, rating:3.8, plugs:[{t:"No especificado",lvl:"slow"}], status:"warn", note:"El cargador original reportó fallas; instalaron uno adicional al lado. Suele haber demanda alta."},
+  {name:"EV Station — El Rosario", city:"Manizales", addr:"El Rosario, Manizales, Caldas", lat:5.0500925, lng:-75.5660016, rating:3.6, plugs:[{t:"Tipo 2",lvl:"slow"}], status:"warn", note:"Solo la carga lenta (Tipo 2) funciona; la carga rápida está reportada fuera de servicio desde noviembre de 2025. App: CHEC."},
+  {name:"ETM — Movilidad Eléctrica", city:"Neiva", addr:"Cra. 30 #27 Sur-45, Neiva, Huila", lat:2.8989769, lng:-75.2675391, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"GO! Energy — EDS Primax", city:"Neiva", addr:"Av. Cra 6W, California, Neiva, Huila", lat:2.9446007, lng:-75.3025793, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Ubicada en estación de servicio Primax. Sin reseñas detalladas."},
+  {name:"EV Station — Soacha", city:"Soacha", addr:"Soacha, Cundinamarca", lat:4.5503125, lng:-74.2406875, rating:4.0, plugs:[{t:"GB/T",lvl:"ultra"},{t:"Tipo 2",lvl:"slow"}], status:"down", note:"Requiere llamar a Enel para activar (no funciona por la app). Reseñas indican cargadores dañados y tiempos de carga de hasta 5 horas."},
+  {name:"Terpel Voltex — Puerto Salgar", city:"Puerto Salgar", addr:"Puerto Salgar, Cundinamarca (ruta Bogotá–Medellín)", lat:5.5763669, lng:-74.6229658, rating:3.5, plugs:[{t:"CCS1",lvl:"fast"}], status:"warn", note:"Único punto de carga reportado en la ruta Bogotá–Medellín; suele haber fila larga. CCS1 entrega cerca de 40 kW."},
+  {name:"Estación de Carga Doradal", city:"Puerto Triunfo", addr:"Autopista Medellín-Bogotá Km 164.3, Doradal, Antioquia", lat:5.9001385, lng:-74.7492951, rating:5.0, plugs:[{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Junto a un hotel; reseñas mencionan buena experiencia cargando Tesla ahí. Parada popular camino a los parques de Doradal."},
+  {name:"EV Station — La Aldea Santorini", city:"Puerto Triunfo", addr:"La Aldea Santorini, Doradal, Puerto Triunfo, Antioquia", lat:5.9011712, lng:-74.7403555, rating:4.7, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Cerca del hotel Parador Gitano; buena disponibilidad reportada."},
+  {name:"Terpel Voltex — Bogotá-Tunja", city:"Tunja", addr:"Vía Bogotá - Tunja Km 113, Tunja, Boyacá", lat:5.4911086, lng:-73.4023711, rating:3.0, plugs:[{t:"CCS1",lvl:"fast"},{t:"CCS2",lvl:"fast"}], status:"warn", note:"Reseñas reportan que el conector C2 suele estar dañado; el C1 requiere adaptador. La app no está disponible para números internacionales."},
+  {name:"EDS La Playa / Evinka", city:"Tuta", addr:"Km 17 vía Tunja - Paipa, Vereda Río de Piedras, Tuta, Boyacá", lat:5.6918206, lng:-73.2510445, rating:5.0, plugs:[{t:"Tipo 2",lvl:"fast"}], status:"ok", note:"Cargador Tipo 2 a casi 20 kW vía app Evinka, tarifa de $1.800 COP/kWh reportada como transparente."},
+  {name:"Porsche Destination Charging", city:"Paipa", addr:"Km 2 vía Tunja-Paipa, Paipa, Boyacá", lat:5.7651224, lng:-73.1569669, rating:4.5, plugs:[{t:"Tipo 1",lvl:"slow"}], status:"ok", note:"Cargador de destino, carga lenta."},
+  {name:"EV Station — Paipa", city:"Paipa", addr:"Paipa, Boyacá", lat:5.7651398, lng:-73.1569748, rating:2.3, plugs:[{t:"Tipo 1",lvl:"slow"}], status:"warn", note:"Reseñas indican que solo la carga lenta (7 kW AC) funciona; los demás cargadores están fuera de servicio."},
+  {name:"Evinka — Vía Tunja-Paipa", city:"Sotaquirá", addr:"Vía Tunja - Paipa Km 20, Sotaquirá, Boyacá", lat:5.711583, lng:-73.2413078, rating:3.9, plugs:[{t:"CCS2",lvl:"fast"},{t:"Tipo 1",lvl:"slow"}], status:"ok", note:"En el parqueadero del Hotel La Libertad; buenas reseñas, cafetería y zona verde para esperar mientras carga."},
+  {name:"EV Station — Duitama", city:"Duitama", addr:"Duitama, Boyacá", lat:5.7891559, lng:-73.0576543, rating:4.7, plugs:[{t:"GB/T",lvl:"ultra"},{t:"CCS2",lvl:"fast"}], status:"ok", note:"Muy bien calificada; ofrecen adaptador para carga GB/T. Punto clave en la ruta hacia Casanare. Abierta 24 horas, pago en efectivo o Nequi."},
+  {name:"Terpel Voltex — Santana", city:"Santana", addr:"Santana, Boyacá", lat:6.0526101, lng:-73.4856982, rating:3.8, plugs:[{t:"CCS1",lvl:"fast"},{t:"Tipo 2",lvl:"slow"},{t:"CHAdeMO",lvl:"fast"}], status:"warn", note:"Carga hasta 40 kW vía app Terpel Voltex; reseñas recientes indican que uno de los cargadores dejó de funcionar."},
+  {name:"Estación de Carga — Éxito Panamericana", city:"Popayán", addr:"Comuna 1, Popayán, Cauca", lat:2.452156, lng:-76.6072028, rating:2.8, plugs:[{t:"Tipo 1",lvl:"slow"}], status:"down", note:"Solo dos cargadores Tipo 1 lentos y gratuitos; varias reseñas recientes reportan el punto fuera de servicio."},
+  {name:"EV Station — Cra. 40", city:"Pasto", addr:"Cra. 40 #16d-81, Pasto, Nariño", lat:1.2238738, lng:-77.2861712, rating:3.8, plugs:[{t:"Tipo 2",lvl:"fast"},{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Tiene un cargador trifásico rápido (compatible con Tesla) y uno convencional de 7 kW vía app MUBON. Abierta 24/7, útil en Semana Santa."},
+  {name:"Ruta Zeero Colombia", city:"Bogotá", addr:"Cra. 17 #150-60, Bogotá", lat:4.7320479, lng:-74.0430738, rating:5.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Buenas reseñas; solo abre martes y miércoles según su horario reportado."},
+  {name:"EVcharge / BMW Destination — Anapoima", city:"Anapoima", addr:"Cra. 5 #29, Anapoima, Cundinamarca", lat:4.565676, lng:-74.5313720, rating:null, plugs:[{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Pueblo turístico cerca de Bogotá; varios puntos de carga de destino en la zona. Sin reseñas detalladas."},
+
+  // Costa Caribe, Santanderes, Antioquia (municipios), Valle, Boyacá, Cundinamarca (municipios), Orinoquía
+  {name:"EV Station — CC Ventura Plaza", city:"Cúcuta", addr:"C.C. Ventura Plaza, Los Caobos, Cúcuta, Norte de Santander", lat:7.887346, lng:-72.4959695, rating:4.5, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Reseñas indican que no siempre se respeta el orden de turno."},
+  {name:"EV Station — Prados del Norte", city:"Cúcuta", addr:"Av. 4 #12b Norte, Urb. Prados del Norte, Cúcuta, Norte de Santander", lat:7.9167214, lng:-72.4936372, rating:5.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"Terpel Voltex — Ciénaga", city:"Ciénaga", addr:"Cordobita, Ciénaga, Magdalena (vía a Santa Marta)", lat:11.0270533, lng:-74.2065215, rating:3.9, plugs:[{t:"CCS1",lvl:"fast"}], status:"warn", note:"Sobre la vía hacia Santa Marta. El conector CCS2 fue reportado vandalizado y fuera de servicio; el CCS1 funciona de forma intermitente y a veces entrega menos potencia de la anunciada."},
+  {name:"Voltex — Puerto Colombia", city:"Puerto Colombia", addr:"Sabanilla Montecarmelo, Puerto Colombia, Atlántico", lat:11.010405, lng:-74.9110672, rating:4.5, plugs:[{t:"CCS1",lvl:"fast"},{t:"CCS2",lvl:"fast"}], status:"warn", note:"Antes ofrecía 50 kW en CCS1; las reseñas más recientes reportan que ahora entrega 40 kW en ambos conectores."},
+  {name:"CAREV", city:"Valledupar", addr:"Cl. 7D, Edificio Ankara, Pontevedra, Valledupar, Cesar", lat:10.4828198, lng:-73.2595902, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"EV Station — Sincelejo", city:"Sincelejo", addr:"Sincelejo, Sucre", lat:9.280219, lng:-75.4024183, rating:4.8, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Buenas reseñas, aunque el vehículo queda expuesto al sol mientras carga."},
+  {name:"EV Station — Buenavista", city:"Buenavista", addr:"Buenavista, Córdoba (vía Medellín–Costa)", lat:8.1360231, lng:-75.4125988, rating:2.3, plugs:[{t:"No especificado",lvl:"fast"}], status:"warn", note:"Único cargador reportado en un tramo largo de la vía que conecta a Medellín con la costa; velocidad promedio de 17 kW. Ha tenido fallas prolongadas por falta de repuestos."},
+  {name:"CHEC Charging Station — Viterbo", city:"Belalcázar", addr:"Viterbo, Belalcázar, Caldas", lat:5.0033635, lng:-75.8588269, rating:3.7, plugs:[{t:"CCS1",lvl:"fast"},{t:"CHAdeMO",lvl:"fast"},{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Carga reportada como gratuita; funciona bien con la app CHEC, aunque el conector Tipo 2 a veces entrega menos potencia de la anunciada."},
+  {name:"EV Station — El Carmen de Viboral", city:"El Carmen de Viboral", addr:"Cl. 30 #33-4, El Carmen de Viboral, Antioquia", lat:6.082154, lng:-75.3368046, rating:5.0, plugs:[{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Muy bien calificada; carga todos los Tipo 2 y otros conectores con adaptador. Cerca de restaurante y tienda."},
+  {name:"EV Station — La Ceja", city:"La Ceja", addr:"Cra. 13 #26B-56, La Ceja, Antioquia", lat:6.0347263, lng:-75.4205542, rating:3.5, plugs:[{t:"No especificado",lvl:"slow"}], status:"warn", note:"Solo dos cargadores; reseñas mencionan fallas frecuentes."},
+  {name:"Erco Charging Station", city:"Rionegro", addr:"Km 6 vía Llano Grande, Rionegro, Antioquia", lat:6.1250174, lng:-75.4216578, rating:5.0, plugs:[{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"Parqueadero techado; cargador nuevo según reseñas."},
+  {name:"EPM Charging Station — Envigado", city:"Envigado", addr:"Cl. 30 Sur #45a-150, Zona 2, Envigado, Antioquia", lat:6.1790001, lng:-75.5876784, rating:2.9, plugs:[{t:"No especificado",lvl:"fast"}], status:"warn", note:"Solo un cargador rápido y funciona únicamente con tarjeta EPM, no con el QR de la app."},
+  {name:"Celsia Charging Station — Envigado", city:"Envigado", addr:"Cra. 48 #32B Sur-139, Envigado, Antioquia", lat:6.1773366, lng:-75.5902835, rating:3.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"down", note:"Reseñas negativas sobre el servicio."},
+  {name:"EV Station — El Poblado (Cra. 43A Sur)", city:"Medellín", addr:"Cra. 43A #18 Sur-135, El Poblado, Medellín", lat:6.1853925, lng:-75.579517, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"EV Station — El Poblado (Cl. 7 Sur)", city:"Medellín", addr:"Cl. 7 Sur, El Poblado, Medellín", lat:6.196826, lng:-75.5743477, rating:2.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"warn", note:"Reseñas indican tiempos de espera largos por pocos puntos disponibles."},
+  {name:"ESSA Charging Station — Floridablanca", city:"Floridablanca", addr:"Cl. 31, Floridablanca, Santander", lat:7.0695898, lng:-73.1052899, rating:3.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"warn", note:"Reseñas indican que suele estar lleno y que no admite vehículos con matrícula extranjera."},
+  {name:"Voltex — Piedecuesta", city:"Piedecuesta", addr:"Piedecuesta, Santander", lat:6.9980872, lng:-73.0520927, rating:4.4, plugs:[{t:"No especificado",lvl:"fast"}], status:"ok", note:"Zona de descanso con baño y comida; dos puntos funcionan bien, aunque una reseña sugiere que falta actualizar a carga GB/T."},
+  {name:"EV Station — Barrancabermeja (Tv. 55A)", city:"Barrancabermeja", addr:"Tv. 55A #25-26, Barrancabermeja, Santander", lat:7.0669298, lng:-73.8581523, rating:5.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"Terpel Voltex — El Silencio", city:"Barrancabermeja", addr:"El Silencio, Barrancabermeja, Santander", lat:7.1292226, lng:-73.5696707, rating:4.6, plugs:[{t:"CCS1",lvl:"fast"}], status:"ok", note:"Buena parada en ruta; una carga de 18% a 100% toma cerca de 1.5 horas. Pocas opciones para comer cerca."},
+  {name:"EV Station — Cra. 19", city:"Tuluá", addr:"Cra. 19 #28-76, Tuluá, Valle del Cauca", lat:4.083618, lng:-76.2031312, rating:2.3, plugs:[{t:"No especificado",lvl:"slow"}], status:"down", note:"Reportado fuera de servicio durante varios meses según reseñas recientes."},
+  {name:"EV Station — Guadalajara de Buga", city:"Buga", addr:"Cl. 1AA Norte #23a-21, Guadalajara de Buga, Valle del Cauca", lat:3.895114, lng:-76.311692, rating:4.1, plugs:[{t:"GB/T",lvl:"ultra"},{t:"CCS2",lvl:"fast"},{t:"Tipo 2",lvl:"slow"}], status:"ok", note:"GB/T carga DC a 40 kW; CCS2 a 30 kW. Ubicación algo aislada, buena para esperar mientras carga."},
+  {name:"EV Station — Cartago", city:"Cartago", addr:"C.C. Nuestro, Cartago, Valle del Cauca", lat:4.7572112, lng:-75.9333657, rating:5.0, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"Transchiguinguiza", city:"Duitama", addr:"Cra. 42 #13-15, Sevilla, Duitama, Boyacá", lat:5.8076035, lng:-73.0258149, rating:2.0, plugs:[{t:"CCS1",lvl:"fast"},{t:"CCS2",lvl:"fast"}], status:"warn", note:"Reseñas contradictorias: algunas dicen que ya no existe o es un depósito de repuestos, otras describen carga rápida CCS1/CCS2 a 60 kW funcionando bien. Confirma antes de ir."},
+  {name:"Terpel Charging Station — Tenjo", city:"Tenjo", addr:"La Punta, Tenjo, Cundinamarca", lat:4.7889766, lng:-74.1954141, rating:4.0, plugs:[{t:"No especificado",lvl:"fast"}], status:"warn", note:"Reseñas muy negativas sobre la app Voltex/Terpel: de 7 puntos de carga, solo 3 son reportados como funcionales."},
+  {name:"Punto de Carga — Mosquera", city:"Mosquera", addr:"Dg. 3 #14A-16, Mosquera, Cundinamarca", lat:4.712034, lng:-74.2374838, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"JS Servicio Eléctrico Automotriz", city:"Girardot", addr:"Cra. 8 #22-41, Girardot, Cundinamarca", lat:4.2992943, lng:-74.8022738, rating:4.1, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Taller mecánico con dos puntos de carga eléctrica en el centro de Girardot."},
+  {name:"EV Station — Yopal (Cl. 30)", city:"Yopal", addr:"Cl. 30 #16a-02, La Primavera, Yopal, Casanare", lat:5.3284774, lng:-72.3955056, rating:3.5, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"El Triángulo Energy Yopal", city:"Yopal", addr:"Unicentro, Yopal, Casanare", lat:5.3472612, lng:-72.3898802, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+  {name:"EV Station — Saravena", city:"Saravena", addr:"Cra. 13 #22-24, Saravena, Arauca", lat:6.9543563, lng:-71.8724507, rating:null, plugs:[{t:"No especificado",lvl:"slow"}], status:"ok", note:"Sin reseñas detalladas."},
+];
+
+let stations = fallbackStations;
+let cities = [];
+let plugTypes = [];
+
+const STORAGE_KEY = "voltio_prefs_v1";
+const FAV_KEY = "voltio_favorites_v1";
+const PAGE_SIZE = 30;
+
+let savedPrefs = {};
+try{ savedPrefs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }catch(e){ savedPrefs = {}; }
+
+let favorites = new Set();
+try{ favorites = new Set(JSON.parse(localStorage.getItem(FAV_KEY) || "[]")); }catch(e){ favorites = new Set(); }
+
+let activeCity = savedPrefs.city || "Todas";
+let activePlug = savedPrefs.plug || "Todos";
+let pickerConnector = savedPrefs.connector || null;
+let query = "";
+let favOnly = false;
+let nearMe = false;
+let userLoc = null;
+let visibleCount = PAGE_SIZE;
+let searchDebounce = null;
+
+const statusText = {ok:"Reportada operativa", warn:"Reportes de fallas parciales", down:"Reportada fuera de servicio"};
+const levelLabel = {slow:"Carga lenta", fast:"Carga rápida", ultra:"Carga ultra rápida"};
+const levelRank = {slow:0, fast:1, ultra:2};
+const statusRank = {ok:0, warn:1, down:2};
+
+// Quita tildes/diacríticos para que "bogota" encuentre "Bogotá"
+function normalize(s){
+  return (s || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+function stationKey(s){
+  return s.name + "|" + s.lat + "|" + s.lng;
+}
+
+function savePrefs(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({city:activeCity, plug:activePlug, connector:pickerConnector})); }catch(e){}
+}
+function saveFavorites(){
+  try{ localStorage.setItem(FAV_KEY, JSON.stringify([...favorites])); }catch(e){}
+}
+
+function haversineKm(lat1,lng1,lat2,lng2){
+  const R = 6371;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLng = (lng2-lng1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function brandsFor(t){
+  const s = t.toLowerCase();
+  if(s.includes("no especificado")) return "";
+  if(s.includes("gb/t")) return "BYD, JAC";
+  if(s.includes("chademo")) return "Nissan Leaf, Kia Soul EV (antiguo)";
+  if(s.includes("ccs1")) return "Chevrolet Bolt, Ford";
+  if(s.includes("ccs2")) return "BYD, Kia, Hyundai, BMW, Tesla (con adaptador)";
+  if(s.includes("ccs")) return "BYD, Kia, Hyundai, Chevrolet, Tesla (con adaptador)";
+  if(s.includes("tipo 2")) return "BMW, Mercedes-Benz, Renault, Chevrolet, BYD, Kia, Hyundai, Tesla (con adaptador)";
+  if(s.includes("tipo 1")) return "Mitsubishi, Renault Twizy, Kia y Nissan (modelos antiguos)";
+  return "";
+}
+
+// Agrupa cualquier texto de conector (local u Open Charge Map) en una de las 6 categorías del selector visual
+function connectorCategory(t){
+  const s = normalize(t);
+  if(!s || s.includes("no especificado")) return null;
+  if(s.includes("chademo")) return "chademo";
+  if(s.includes("gb/t") || s.includes("gbt")) return "gbt";
+  if(s.includes("ccs")){
+    if(s.includes("ccs1") || s.includes("combo 1")) return "ccs1";
+    if(s.includes("ccs2") || s.includes("combo 2")) return "ccs2";
+    return "ccs2";
+  }
+  if(s.includes("tipo 2") || s.includes("type 2") || s.includes("mennekes")) return "tipo2";
+  if(s.includes("tipo 1") || s.includes("type 1") || s.includes("j1772")) return "tipo1";
+  return null;
+}
+
+const CONNECTOR_TYPES = [
+  {key:"tipo1", label:"Tipo 1", sub:"J1772 · AC lento", brands:"Mitsubishi, Renault Twizy, Kia y Nissan antiguos",
+    svg:`<svg width="56" height="56" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="32" cy="32" r="24"/><circle cx="22" cy="21" r="4.4" fill="currentColor" stroke="none"/><circle cx="42" cy="21" r="4.4" fill="currentColor" stroke="none"/><circle cx="23" cy="35" r="3" fill="currentColor" stroke="none"/><circle cx="41" cy="35" r="3" fill="currentColor" stroke="none"/><circle cx="32" cy="46" r="5" fill="currentColor" stroke="none"/></svg>`},
+  {key:"tipo2", label:"Tipo 2", sub:"Mennekes · AC", brands:"BMW, Mercedes-Benz, Renault, Chevrolet, BYD, Kia, Hyundai",
+    svg:`<svg width="56" height="56" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M14 16 H50 Q54 16 54 24 Q54 46 32 58 Q10 46 10 24 Q10 16 14 16 Z"/><circle cx="32" cy="34" r="4" fill="currentColor" stroke="none"/><circle cx="32" cy="20" r="3.2" fill="currentColor" stroke="none"/><circle cx="44" cy="27" r="3.2" fill="currentColor" stroke="none"/><circle cx="44" cy="41" r="3.2" fill="currentColor" stroke="none"/><circle cx="32" cy="48" r="3.2" fill="currentColor" stroke="none"/><circle cx="20" cy="41" r="3.2" fill="currentColor" stroke="none"/><circle cx="20" cy="27" r="3.2" fill="currentColor" stroke="none"/></svg>`},
+  {key:"ccs1", label:"CCS1", sub:"Combo 1 · DC rápido", brands:"Chevrolet Bolt, Ford",
+    svg:`<svg width="56" height="56" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><circle cx="32" cy="18" r="15"/><circle cx="24" cy="11" r="3" fill="currentColor" stroke="none"/><circle cx="40" cy="11" r="3" fill="currentColor" stroke="none"/><circle cx="25" cy="20" r="2.2" fill="currentColor" stroke="none"/><circle cx="39" cy="20" r="2.2" fill="currentColor" stroke="none"/><circle cx="32" cy="26" r="2.6" fill="currentColor" stroke="none"/><rect x="8" y="29" width="48" height="29" rx="13"/><circle cx="22" cy="44" r="7.5" fill="currentColor" stroke="none"/><circle cx="42" cy="44" r="7.5" fill="currentColor" stroke="none"/></svg>`},
+  {key:"ccs2", label:"CCS2", sub:"Combo 2 · DC rápido", brands:"BYD, Kia, Hyundai, BMW, Tesla (con adaptador)",
+    svg:`<svg width="56" height="56" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M16 2 H48 Q52 2 52 8 Q52 26 32 33 Q12 26 12 8 Q12 2 16 2 Z"/><circle cx="32" cy="16" r="3" fill="currentColor" stroke="none"/><circle cx="32" cy="8" r="2.1" fill="currentColor" stroke="none"/><circle cx="40" cy="12" r="2.1" fill="currentColor" stroke="none"/><circle cx="40" cy="20" r="2.1" fill="currentColor" stroke="none"/><circle cx="32" cy="24" r="2.1" fill="currentColor" stroke="none"/><circle cx="24" cy="20" r="2.1" fill="currentColor" stroke="none"/><circle cx="24" cy="12" r="2.1" fill="currentColor" stroke="none"/><rect x="6" y="31" width="52" height="30" rx="14"/><circle cx="22" cy="46" r="8" fill="currentColor" stroke="none"/><circle cx="42" cy="46" r="8" fill="currentColor" stroke="none"/></svg>`},
+  {key:"chademo", label:"CHAdeMO", sub:"DC rápido", brands:"Nissan Leaf, Kia Soul EV (antiguo)",
+    svg:`<svg width="56" height="56" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><circle cx="28" cy="32" r="24"/><path d="M50 22 L60 26 V38 L50 42 Z"/><circle cx="21" cy="30" r="6.5" fill="currentColor" stroke="none"/><circle cx="35" cy="30" r="6.5" fill="currentColor" stroke="none"/><circle cx="28" cy="42" r="4" fill="currentColor" stroke="none"/><circle cx="15" cy="16" r="2" fill="currentColor" stroke="none"/><circle cx="41" cy="16" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="48" r="2" fill="currentColor" stroke="none"/></svg>`},
+  {key:"gbt", label:"GB/T", sub:"Estándar chino · AC/DC", brands:"BYD, JAC y otros modelos chinos",
+    svg:`<svg width="56" height="56" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M14 16 H50 Q54 16 54 24 Q54 46 32 58 Q10 46 10 24 Q10 16 14 16 Z"/><circle cx="32" cy="34" r="4" fill="currentColor" stroke="none"/><circle cx="32" cy="20" r="3.2" fill="currentColor" stroke="none"/><circle cx="44" cy="27" r="3.2" fill="currentColor" stroke="none"/><circle cx="44" cy="41" r="3.2" fill="currentColor" stroke="none"/><circle cx="32" cy="48" r="3.2" fill="currentColor" stroke="none"/><circle cx="20" cy="41" r="3.2" fill="currentColor" stroke="none"/><circle cx="20" cy="27" r="3.2" fill="currentColor" stroke="none"/></svg>`},
+];
+
+function bestLevel(plugs){
+  return plugs.reduce((best,p)=> levelRank[p.lvl] > levelRank[best] ? p.lvl : best, "slow");
+}
+
+function computeFilters(){
+  cities = ["Todas", ...new Set(stations.map(s=>s.city))].sort((a,b)=> a==="Todas"?-1:b==="Todas"?1:a.localeCompare(b));
+  plugTypes = ["Todos", ...new Set(stations.flatMap(s=>s.plugs.map(p=>p.t)))].sort((a,b)=> a==="Todos"?-1:b==="Todos"?1:a.localeCompare(b));
+}
+
+// --- Datos en vivo: Open Charge Map (openchargemap.org, licencia ODbL) ---
+function levelFromKW(kw){
+  if(!kw) return "slow";
+  if(kw >= 60) return "ultra";
+  if(kw >= 15) return "fast";
+  return "slow";
+}
+
+function mapOcmToStation(poi){
+  const info = poi.AddressInfo || {};
+  const addrParts = [info.AddressLine1, info.Town, info.StateOrProvince].filter(Boolean);
+  const conns = poi.Connections || [];
+  const plugs = conns.length ? conns.map(c=>({
+    t: (c.ConnectionType && c.ConnectionType.Title) || "No especificado",
+    lvl: levelFromKW(c.PowerKW)
+  })) : [{t:"No especificado", lvl:"slow"}];
+
+  let status = "warn";
+  if(poi.StatusType){
+    if(poi.StatusType.IsOperational === true) status = "ok";
+    else if(poi.StatusType.IsOperational === false) status = "down";
+  }
+
+  const noteParts = [];
+  if(poi.OperatorInfo && poi.OperatorInfo.Title) noteParts.push(`Operador: ${poi.OperatorInfo.Title}.`);
+  if(poi.NumberOfPoints) noteParts.push(`${poi.NumberOfPoints} punto(s) de carga en el sitio.`);
+  if(poi.UsageCost) noteParts.push(`Costo: ${poi.UsageCost}.`);
+  if(!noteParts.length) noteParts.push("Dato de Open Charge Map, sin reseñas de comunidad todavía.");
+
+  return {
+    name: info.Title || "Estación sin nombre",
+    city: info.Town || info.StateOrProvince || "Colombia",
+    addr: addrParts.join(", ") || "Colombia",
+    lat: info.Latitude,
+    lng: info.Longitude,
+    rating: null,
+    plugs,
+    status,
+    note: noteParts.join(" ")
+  };
+}
+
+function setBanner(mode, text){
+  const el = document.getElementById('dataBanner');
+  el.className = 'data-banner ' + mode;
+  el.innerHTML = `<span class="dot"></span>${text}`;
+}
+
+async function loadLiveData(){
+  try{
+    const res = await fetch('https://api.openchargemap.io/v3/poi/?output=json&countrycode=CO&maxresults=3000&compact=false&verbose=false');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const mapped = data
+      .filter(poi => poi.AddressInfo && poi.AddressInfo.Latitude && poi.AddressInfo.Longitude)
+      .map(mapOcmToStation);
+    if(mapped.length){
+      stations = mapped;
+      computeFilters();
+      buildChips(document.getElementById('cityRow'), cities, ()=>activeCity, v=>activeCity=v);
+      buildChips(document.getElementById('plugRow'), plugTypes, ()=>activePlug, v=>activePlug=v);
+      render();
+      setBanner('live', `En vivo — ${mapped.length} estaciones desde Open Charge Map`);
+    } else {
+      throw new Error('Respuesta vacía');
+    }
+  }catch(err){
+    setBanner('offline', 'Sin conexión con la fuente en vivo — mostrando datos guardados');
+  }
+}
+
+function getFilteredStations(){
+  const q = normalize(query);
+
+  let filtered = stations.filter(s=>{
+    const cityMatch = activeCity==="Todas" || s.city===activeCity;
+    const plugMatch = activePlug==="Todos" || s.plugs.some(p=>p.t===activePlug);
+    const connectorMatch = !pickerConnector || s.plugs.some(p=>connectorCategory(p.t)===pickerConnector);
+    const favMatch = !favOnly || favorites.has(stationKey(s));
+    const textMatch = !q ||
+      normalize(s.name).includes(q) ||
+      normalize(s.addr).includes(q) ||
+      normalize(s.city).includes(q) ||
+      s.plugs.some(p=>normalize(p.t).includes(q));
+    return cityMatch && plugMatch && connectorMatch && favMatch && textMatch;
+  });
+
+  if(nearMe && userLoc){
+    filtered = filtered.map(s=>({...s, _dist: (s.lat!=null && s.lng!=null) ? haversineKm(userLoc.lat,userLoc.lng,s.lat,s.lng) : Infinity}));
+    filtered.sort((a,b)=> a._dist - b._dist);
+  } else {
+    filtered = [...filtered].sort((a,b)=>{
+      const st = statusRank[a.status] - statusRank[b.status];
+      if(st !== 0) return st;
+      return (b.rating || 0) - (a.rating || 0);
+    });
+  }
+  return filtered;
+}
+
+function render(){
+  const list = document.getElementById('list');
+  const filtered = getFilteredStations();
+
+  document.getElementById('resultCount').textContent = filtered.length;
+  document.getElementById('cityLabel').textContent = activeCity==="Todas" ? "Todo el país" : activeCity;
+  document.getElementById('emptyState').style.display = filtered.length ? 'none' : 'block';
+
+  const shown = filtered.slice(0, visibleCount);
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  loadMoreBtn.style.display = filtered.length > shown.length ? 'block' : 'none';
+  loadMoreBtn.textContent = `Ver más estaciones (${filtered.length - shown.length} restantes)`;
+
+  list.innerHTML = shown.map(s=>{
+    const lvl = bestLevel(s.plugs);
+    const key = stationKey(s);
+    const isFav = favorites.has(key);
+    const distHtml = (nearMe && s._dist!=null && isFinite(s._dist)) ? `<div class="distance-badge">${s._dist < 1 ? Math.round(s._dist*1000)+' m' : s._dist.toFixed(1)+' km'} de ti</div>` : '';
+    return `
+    <div class="card">
+      <button class="fav-btn ${isFav?'active':''}" data-key="${encodeURIComponent(key)}" aria-label="Guardar en favoritos" type="button">
+        <svg viewBox="0 0 24 24" fill="${isFav?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </button>
+      <div class="card-top">
+        <div class="card-name">${s.name}</div>
+        <div class="card-city">${s.city}</div>
+      </div>
+      <div class="card-addr">${s.addr}</div>
+      ${distHtml}
+      <div class="hero-level lvl-${lvl}">${levelLabel[lvl]}<span class="lvl-tag">${lvl}</span></div>
+      <div class="status-line status-${s.status}"><span class="status-dot"></span>${statusText[s.status]} — ${s.note}</div>
+      <div class="plugs">${s.plugs.map(p=>{const b=brandsFor(p.t);return `<span class="plug">${p.t}${b ? `<span class="plug-brands">${b}</span>` : ''}</span>`;}).join('')}</div>
+      <div class="card-foot">
+        <span class="rating">${s.rating ? `<b>★ ${s.rating.toFixed(1)}</b>` : 'Sin calificación'}</span>
+        <a class="maplink" href="https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lng}" target="_blank" rel="noopener">Ver en el mapa →</a>
+      </div>
+    </div>
+  `;}).join('');
+
+  list.querySelectorAll('.fav-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = decodeURIComponent(btn.dataset.key);
+      if(favorites.has(key)) favorites.delete(key); else favorites.add(key);
+      saveFavorites();
+      render();
+      if(currentView === 'map') renderMapMarkers();
+    });
+  });
+
+  if(currentView === 'map' && leafletMap) renderMapMarkers();
+}
+
+let currentView = 'list';
+let leafletMap = null;
+let markerLayer = null;
+const MAP_MARKER_CAP = 300;
+const statusColor = {ok:'#16A34A', warn:'#D97706', down:'#DC2626'};
+
+function initMap(){
+  if(leafletMap) return;
+  if(typeof L === 'undefined'){
+    document.getElementById('map').innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:13.5px;">No se pudo cargar el mapa (necesita conexión a internet la primera vez). Prueba de nuevo cuando tengas señal.</div>';
+    return;
+  }
+  leafletMap = L.map('map', {zoomControl:true}).setView([4.6, -74.1], 6); // centrado en Colombia
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(leafletMap);
+  markerLayer = L.layerGroup().addTo(leafletMap);
+}
+
+function popupHtml(s){
+  const key = stationKey(s);
+  const isFav = favorites.has(key);
+  return `
+    <div class="popup-name">${s.name}</div>
+    <div class="popup-city">${s.addr}, ${s.city}</div>
+    <div class="popup-status status-${s.status}">${statusText[s.status]} — ${s.note}</div>
+    <div class="popup-plugs">${s.plugs.map(p=>`<span class="popup-plug">${p.t}</span>`).join('')}</div>
+    <div class="popup-actions">
+      <button class="popup-fav ${isFav?'active':''}" data-key="${encodeURIComponent(key)}" type="button">${isFav ? '★ Favorito' : '☆ Guardar'}</button>
+      <a class="popup-maplink" href="https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lng}" target="_blank" rel="noopener">Cómo llegar →</a>
+    </div>
+  `;
+}
+
+function renderMapMarkers(){
+  if(!leafletMap) return;
+  const filtered = getFilteredStations().filter(s=>s.lat!=null && s.lng!=null);
+  markerLayer.clearLayers();
+
+  const capped = filtered.slice(0, MAP_MARKER_CAP);
+  capped.forEach(s=>{
+    const marker = L.circleMarker([s.lat, s.lng], {
+      radius: 8,
+      color: '#fff',
+      weight: 2,
+      fillColor: statusColor[s.status] || statusColor.ok,
+      fillOpacity: 0.95
+    });
+    marker.bindPopup(popupHtml(s));
+    marker.on('popupopen', (e)=>{
+      const el = e.popup.getElement();
+      const btn = el.querySelector('.popup-fav');
+      if(btn){
+        btn.addEventListener('click', ()=>{
+          const key = decodeURIComponent(btn.dataset.key);
+          if(favorites.has(key)) favorites.delete(key); else favorites.add(key);
+          saveFavorites();
+          marker.setPopupContent(popupHtml(s));
+          render();
+        });
+      }
+    });
+    markerLayer.addLayer(marker);
+  });
+
+  const noteEl = document.getElementById('mapCapNote');
+  if(filtered.length > MAP_MARKER_CAP){
+    if(!noteEl){
+      const n = document.createElement('div');
+      n.className = 'map-cap-note';
+      n.id = 'mapCapNote';
+      n.textContent = `Mostrando ${MAP_MARKER_CAP} de ${filtered.length} estaciones — usa la búsqueda o los filtros para ver más`;
+      document.getElementById('mapContainer').appendChild(n);
+    } else {
+      noteEl.textContent = `Mostrando ${MAP_MARKER_CAP} de ${filtered.length} estaciones — usa la búsqueda o los filtros para ver más`;
+      noteEl.style.display = 'block';
+    }
+  } else if(noteEl){
+    noteEl.style.display = 'none';
+  }
+
+  // Si hay ubicación del usuario (por "cerca de mí"), centra el mapa ahí; si no, ajusta a los marcadores
+  if(nearMe && userLoc){
+    leafletMap.setView([userLoc.lat, userLoc.lng], 12);
+  } else if(capped.length){
+    const bounds = L.latLngBounds(capped.map(s=>[s.lat, s.lng]));
+    leafletMap.fitBounds(bounds, {padding:[30,30], maxZoom:13});
+  }
+}
+
+function switchView(view){
+  currentView = view;
+  document.getElementById('viewListBtn').classList.toggle('active', view==='list');
+  document.getElementById('viewMapBtn').classList.toggle('active', view==='map');
+  document.getElementById('list').style.display = view==='list' ? 'block' : 'none';
+  document.getElementById('loadMoreBtn').style.display = view==='list' ? '' : 'none';
+  document.getElementById('mapContainer').style.display = view==='map' ? 'block' : 'none';
+  document.getElementById('emptyState').style.display = (view==='list' && getFilteredStations().length===0) ? 'block' : 'none';
+
+  if(view === 'map'){
+    initMap();
+    if(leafletMap) setTimeout(()=>{ leafletMap.invalidateSize(); renderMapMarkers(); }, 50);
+  }
+}
+
+function buildChips(container, items, activeGetter, onSelect){
+  container.innerHTML = items.map(item=>`<div class="chip ${item===activeGetter()?'active':''}" data-val="${item}">${item}</div>`).join('');
+  container.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      onSelect(chip.dataset.val);
+      visibleCount = PAGE_SIZE;
+      savePrefs();
+      buildChips(container, items, activeGetter, onSelect);
+      render();
+    });
+  });
+}
+
+function resetAllFilters(){
+  activeCity = "Todas";
+  activePlug = "Todos";
+  pickerConnector = null;
+  favOnly = false;
+  query = "";
+  visibleCount = PAGE_SIZE;
+  document.getElementById('searchInput').value = "";
+  document.getElementById('clearBtn').classList.remove('show');
+  document.getElementById('favBtn').classList.remove('active');
+  savePrefs();
+  buildChips(document.getElementById('cityRow'), cities, ()=>activeCity, v=>activeCity=v);
+  buildChips(document.getElementById('plugRow'), plugTypes, ()=>activePlug, v=>activePlug=v);
+  updateConnectorBarUI();
+  render();
+}
+
+computeFilters();
+buildChips(document.getElementById('cityRow'), cities, ()=>activeCity, v=>activeCity=v);
+buildChips(document.getElementById('plugRow'), plugTypes, ()=>activePlug, v=>activePlug=v);
+
+const searchInput = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearBtn');
+
+const citySuggestions = document.getElementById('citySuggestions');
+
+function hideCitySuggestions(){
+  citySuggestions.classList.remove('show');
+  citySuggestions.innerHTML = '';
+}
+
+function pickCitySuggestion(city){
+  activeCity = city;
+  query = "";
+  searchInput.value = "";
+  clearBtn.classList.remove('show');
+  visibleCount = PAGE_SIZE;
+  savePrefs();
+  buildChips(document.getElementById('cityRow'), cities, ()=>activeCity, v=>activeCity=v);
+  hideCitySuggestions();
+  render();
+}
+
+function updateCitySuggestions(val){
+  const q = normalize(val);
+  if(!q){ hideCitySuggestions(); return; }
+  const matches = cities.filter(c=>c!=="Todas" && normalize(c).includes(q)).slice(0, 5);
+  if(!matches.length){ hideCitySuggestions(); return; }
+  citySuggestions.innerHTML = matches.map(c=>`
+    <div class="city-suggestion" data-city="${c}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      ${c}
+    </div>
+  `).join('');
+  citySuggestions.querySelectorAll('.city-suggestion').forEach(el=>{
+    el.addEventListener('mousedown', e=>{
+      e.preventDefault();
+      pickCitySuggestion(el.dataset.city);
+    });
+  });
+  citySuggestions.classList.add('show');
+}
+
+searchInput.addEventListener('input', e=>{
+  const val = e.target.value;
+  clearBtn.classList.toggle('show', val.length > 0);
+  updateCitySuggestions(val);
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(()=>{
+    query = val;
+    visibleCount = PAGE_SIZE;
+    render();
+  }, 150);
+});
+
+searchInput.addEventListener('blur', ()=>{
+  setTimeout(hideCitySuggestions, 120);
+});
+
+clearBtn.addEventListener('click', ()=>{
+  searchInput.value = "";
+  query = "";
+  clearBtn.classList.remove('show');
+  visibleCount = PAGE_SIZE;
+  hideCitySuggestions();
+  searchInput.focus();
+  render();
+});
+
+document.getElementById('favBtn').addEventListener('click', function(){
+  favOnly = !favOnly;
+  this.classList.toggle('active', favOnly);
+  visibleCount = PAGE_SIZE;
+  render();
+});
+
+const NEAR_ME_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg> Cerca de mí';
+
+function enableNearMe(onDone){
+  const btn = document.getElementById('nearMeBtn');
+  if(!('geolocation' in navigator)){
+    if(onDone) onDone(false);
+    return;
+  }
+  btn.classList.add('loading');
+  btn.textContent = 'Ubicando…';
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      userLoc = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+      nearMe = true;
+      visibleCount = PAGE_SIZE;
+      btn.classList.remove('loading');
+      btn.innerHTML = NEAR_ME_ICON;
+      btn.classList.add('active');
+      render();
+      if(onDone) onDone(true);
+    },
+    err=>{
+      btn.classList.remove('loading');
+      btn.innerHTML = NEAR_ME_ICON;
+      if(onDone) onDone(false);
+    }
+  );
+}
+
+document.getElementById('nearMeBtn').addEventListener('click', function(){
+  if(nearMe){
+    nearMe = false;
+    this.classList.remove('active');
+    visibleCount = PAGE_SIZE;
+    render();
+    return;
+  }
+  if(!('geolocation' in navigator)){
+    alert('Tu navegador no permite compartir ubicación.');
+    return;
+  }
+  enableNearMe(ok=>{
+    if(!ok) alert('No pudimos obtener tu ubicación. Revisa los permisos de ubicación de la app.');
+  });
+});
+
+// --- Selector visual de conector ---
+function connectorLabel(key){
+  const c = CONNECTOR_TYPES.find(c=>c.key===key);
+  return c ? c.label : key;
+}
+
+function updateConnectorBarUI(){
+  const ctaBtn = document.getElementById('connectorCtaBtn');
+  const label = document.getElementById('connectorCtaLabel');
+  const clearBtn = document.getElementById('connectorClearBtn');
+  if(pickerConnector){
+    ctaBtn.classList.add('picked');
+    label.textContent = `Mostrando: ${connectorLabel(pickerConnector)} — cambiar`;
+    clearBtn.classList.add('show');
+  } else {
+    ctaBtn.classList.remove('picked');
+    label.textContent = '¿Cuál es tu conector? Identifícalo';
+    clearBtn.classList.remove('show');
+  }
+}
+
+function buildConnectorGrid(){
+  const grid = document.getElementById('connectorGrid');
+  grid.innerHTML = CONNECTOR_TYPES.map(c=>`
+    <button class="connector-card" data-key="${c.key}" type="button">
+      ${c.svg}
+      <span class="cc-label">${c.label}</span>
+      <span class="cc-sub">${c.sub}</span>
+      <span class="cc-brands">${c.brands}</span>
+    </button>
+  `).join('') + `
+    <button class="connector-card cc-any" data-key="" type="button">
+      <span class="cc-label">No estoy seguro / ver todas</span>
+    </button>
+  `;
+  grid.querySelectorAll('.connector-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const key = card.dataset.key || null;
+      pickerConnector = key;
+      visibleCount = PAGE_SIZE;
+      savePrefs();
+      updateConnectorBarUI();
+      closeConnectorModal();
+      render();
+      if(key && !nearMe) enableNearMe();
+    });
+  });
+}
+
+function openConnectorModal(){
+  document.getElementById('connectorModalOverlay').classList.add('open');
+}
+function closeConnectorModal(){
+  document.getElementById('connectorModalOverlay').classList.remove('open');
+}
+
+document.getElementById('connectorCtaBtn').addEventListener('click', openConnectorModal);
+document.getElementById('connectorModalClose').addEventListener('click', closeConnectorModal);
+document.getElementById('connectorModalOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'connectorModalOverlay') closeConnectorModal();
+});
+document.getElementById('connectorClearBtn').addEventListener('click', ()=>{
+  pickerConnector = null;
+  visibleCount = PAGE_SIZE;
+  savePrefs();
+  updateConnectorBarUI();
+  render();
+});
+
+buildConnectorGrid();
+updateConnectorBarUI();
+
+document.getElementById('resetLink').addEventListener('click', resetAllFilters);
+
+document.getElementById('viewListBtn').addEventListener('click', ()=>switchView('list'));
+document.getElementById('viewMapBtn').addEventListener('click', ()=>switchView('map'));
+
+document.getElementById('loadMoreBtn').addEventListener('click', ()=>{
+  visibleCount += PAGE_SIZE;
+  render();
+});
+
+render();
+loadLiveData();
+
+// --- Banner de AdMob (solo corre dentro de la app nativa, no en el navegador) ---
+// El adId de abajo es el ID DE PRUEBA oficial de Google -- cambiarlo por el
+// real (AdMob > tu app > Unidades de anuncios > banner) antes de publicar.
+async function initAdBanner(){
+  if(!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  try{
+    const { AdMob } = window.Capacitor.Plugins;
+    await AdMob.initialize({ initializeForTesting: true });
+    await AdMob.showBanner({
+      adId: 'ca-app-pub-3940256099942544/6300978111',
+      adSize: 'ADAPTIVE_BANNER',
+      position: 'BOTTOM_CENTER',
+      margin: 0,
+      isTesting: true
+    });
+    document.body.classList.add('has-ad-banner');
+  }catch(e){
+    console.warn('AdMob no disponible:', e);
+  }
+}
+initAdBanner();
+
+// --- Service worker (solo en el navegador/PWA -- dentro de la app nativa no hace falta) ---
+if('serviceWorker' in navigator && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
